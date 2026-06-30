@@ -2,8 +2,9 @@ name: Android Release
 
 # Builds a signed Android APK + AAB without EAS, using `expo prebuild` + Gradle.
 #
-# Trigger:
-#   - Pushes to `main` or `master` (including merged PRs) build signed release artifacts.
+# Triggers:
+#   - Pushes to `main` or `master` (including merged PRs) build signed artifacts.
+#   - Version tags like `v1.2.3` build signed artifacts and publish a GitHub Release.
 #
 # Required repository secrets (Settings -> Secrets and variables -> Actions):
 #   ANDROID_KEYSTORE_BASE64    base64 of your upload keystore (.jks/.keystore)
@@ -20,6 +21,8 @@ name: Android Release
 on:
   push:
     branches: [main, master]
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -64,11 +67,18 @@ jobs:
       - name: Resolve version metadata
         id: version
         run: |
-          # versionCode is monotonic per run; versionName comes from app.json.
+          # versionCode is monotonic per run. Tag releases use the tag for versionName.
           VERSION_CODE="${GITHUB_RUN_NUMBER}"
-          VERSION_NAME="$(node -p "require('./app.json').expo.version")"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION_NAME="${GITHUB_REF_NAME#v}"
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+          else
+            VERSION_NAME="$(node -p "require('./app.json').expo.version")"
+            RELEASE_TAG=""
+          fi
           echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
           echo "name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           echo "Building versionName=${VERSION_NAME} versionCode=${VERSION_CODE}"
 
       - name: Apply version to app.json
@@ -133,4 +143,14 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: LocalLink Android ${{ steps.version.outputs.name }} (${{ steps.version.outputs.code }})
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
 
