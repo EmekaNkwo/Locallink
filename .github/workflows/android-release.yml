@@ -10,7 +10,7 @@ name: Android Release
 #   ANDROID_KEYSTORE_BASE64    base64 of your upload keystore (.jks/.keystore)
 #   ANDROID_KEYSTORE_PASSWORD  keystore (store) password
 #   ANDROID_KEY_ALIAS          key alias inside the keystore
-#   ANDROID_KEY_PASSWORD       key password for that alias
+#   ANDROID_KEY_PASSWORD       key password for that alias (optional if same as store password)
 #
 # Generate a keystore once locally:
 #   keytool -genkeypair -v -keystore release.keystore -alias locallink \
@@ -108,12 +108,36 @@ jobs:
       - name: Decode keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set. Cannot produce a signed release."
             exit 1
           fi
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            echo "::error::ANDROID_KEYSTORE_PASSWORD secret is not set."
+            exit 1
+          fi
+          if [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "::error::ANDROID_KEY_ALIAS secret is not set."
+            exit 1
+          fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          keytool -list \
+            -keystore android/app/release.keystore \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" \
+            >/dev/null
+
+      - name: Validate release signing
+        working-directory: android
+        env:
+          ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_STORE_FILE: ${{ github.workspace }}/android/app/release.keystore
+          ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: ./gradlew :app:validateSigningRelease --no-daemon --stacktrace
 
       - name: Build release artifacts
         working-directory: android
@@ -121,7 +145,7 @@ jobs:
           ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_STORE_FILE: ${{ github.workspace }}/android/app/release.keystore
           ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_LOCALLINK_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           TASKS=""
           case "$BUILD_FORMAT" in

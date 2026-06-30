@@ -29,7 +29,7 @@ means you can never ship an update to the same app listing. Do **not** commit it
 | `ANDROID_KEYSTORE_BASE64`   | base64 of `release.keystore` (see below)           |
 | `ANDROID_KEYSTORE_PASSWORD` | the keystore (store) password                      |
 | `ANDROID_KEY_ALIAS`         | the key alias (e.g. `locallink`)                   |
-| `ANDROID_KEY_PASSWORD`      | the key password for that alias                    |
+| `ANDROID_KEY_PASSWORD`      | the key password for that alias; use the keystore password if you pressed Enter |
 
 Encode the keystore:
 
@@ -39,6 +39,17 @@ base64 -i  release.keystore   # macOS
 ```
 
 Copy the output into `ANDROID_KEYSTORE_BASE64`.
+
+If `keytool` asked:
+
+```text
+Enter key password for <locallink>
+        (RETURN if same as keystore password):
+```
+
+and you pressed Enter, set `ANDROID_KEY_PASSWORD` to the same value as
+`ANDROID_KEYSTORE_PASSWORD` (or leave it unset; CI falls back to the keystore
+password).
 
 ## 3. Build
 
