@@ -2,18 +2,19 @@ import TcpSocket from 'react-native-tcp-socket';
 
 import type { SignalHandlers, SignalingService, SignalMessage } from './signaling-service.types';
 
-import { SIGNAL_PORT } from '@/constants/ble';
+import { SIGNAL_PORT } from '@/constants/network';
 
 type TcpServer = ReturnType<typeof TcpSocket.createServer>;
 type TcpClient = ReturnType<typeof TcpSocket.createConnection>;
 
+const SIGNAL_CONNECT_TIMEOUT_MS = 5_000;
+
 /**
  * Native LAN signaling (PRD §1) — sub-phase 1c.
  *
- * ble-lite is advertise/scan-only (no GATT), so the WebRTC SDP/ICE handshake
- * travels over a direct TCP socket on the local network. The responder listens
- * on SIGNAL_PORT; the initiator (who learned the peer IP from the BLE token)
- * connects to it. Messages are newline-delimited JSON.
+ * The WebRTC SDP/ICE handshake travels over a direct TCP socket on the local
+ * network. The responder listens on SIGNAL_PORT; the initiator learns the peer
+ * IP from Wi-Fi/LAN discovery and connects to it. Messages are newline-delimited JSON.
  */
 class LanSignalingService implements SignalingService {
   private server: TcpServer | null = null;
@@ -40,11 +41,30 @@ class LanSignalingService implements SignalingService {
   async connect(host: string, port: number, handlers: SignalHandlers): Promise<void> {
     await this.stop();
     await new Promise<void>((resolve, reject) => {
-      const socket = TcpSocket.createConnection({ host, port }, () => resolve());
+      let settled = false;
+      let socket: TcpClient;
+      const settle = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        if (error) {
+          socket.destroy();
+          reject(error);
+        } else {
+          resolve();
+        }
+      };
+
+      socket = TcpSocket.createConnection(
+        { host, port, connectTimeout: SIGNAL_CONNECT_TIMEOUT_MS },
+        () => settle(),
+      );
       socket.setEncoding('utf8');
+      socket.setTimeout(SIGNAL_CONNECT_TIMEOUT_MS, () =>
+        settle(new Error('Timed out connecting to peer')),
+      );
       socket.on('error', (error) => {
         handlers.onError?.(error);
-        reject(error);
+        settle(error);
       });
       this.socket = socket;
       this.attach(socket, handlers);

@@ -1,10 +1,10 @@
 /**
- * Serverless signaling boundary (PRD §1 "BLE handshake", adapted).
+ * Serverless signaling boundary.
  *
  * Carries the WebRTC SDP offer/answer + ICE candidates between two peers over a
  * direct **LAN socket** (react-native-tcp-socket) — no signaling server. Peers
- * find each other's IP via the BLE-advertised token (discovery-service), then
- * one listens and the other connects. Messages are signed by encryption-service.
+ * find each other's IP through Wi-Fi/LAN discovery, then one listens and the
+ * other connects. Messages are signed by encryption-service.
  */
 export type SignalMessage =
   | { type: 'offer'; sdp: string; publicKey: string; sig: string }

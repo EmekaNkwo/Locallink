@@ -6,7 +6,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BatteryIndicator } from '@/components/indicators/battery-indicator';
-import { SignalStrength } from '@/components/indicators/signal-strength';
 import { ScreenHeader } from '@/components/screen-header';
 import { StatusPill } from '@/components/status-pill';
 import { ThemedText } from '@/components/themed-text';
@@ -31,7 +30,7 @@ function formatNetworkType(type?: Network.NetworkStateType): string {
     case Network.NetworkStateType.ETHERNET:
       return 'Ethernet';
     case Network.NetworkStateType.BLUETOOTH:
-      return 'Bluetooth';
+      return 'Local network';
     case Network.NetworkStateType.NONE:
       return 'Offline';
     case Network.NetworkStateType.VPN:
@@ -61,7 +60,6 @@ export function StatusScreen() {
   const isScanning = useDeviceStore((state) => state.isScanning);
 
   const isConnected = callStatus === 'active' && session !== null;
-  const signal = pairedDevice?.signal ?? 0;
   const latency = session?.latencyMs ?? 0;
   const isLowBattery = batteryLevel < 20;
   const batteryLabel = batteryHydrated ? (charging ? 'Charging' : 'On battery') : 'Checking...';
@@ -74,7 +72,7 @@ export function StatusScreen() {
         ? 'Looking for devices'
         : 'No device connected';
   const peerLabel = session?.peerName ?? pairedDevice?.name ?? 'None';
-  const discoveryLabel = isScanning ? 'Bluetooth scanning' : pairedDevice ? 'Found by Bluetooth' : 'Idle';
+  const discoveryLabel = isScanning ? 'Scanning local network' : pairedDevice ? 'Found on local network' : 'Idle';
 
   useEffect(() => {
     let mounted = true;
@@ -140,11 +138,6 @@ export function StatusScreen() {
           <Row label="Status" value={connectionLabel} accent={isConnected || pairedDevice !== null} />
           <Row label="Peer" value={peerLabel} />
           <Row label="Discovery" value={discoveryLabel} accent={isScanning} />
-          {pairedDevice ? (
-            <RowNode label="Peer signal">
-              <SignalStrength signal={signal} />
-            </RowNode>
-          ) : null}
           <Row label="Latency" value={isConnected ? `${latency}ms` : '—'} accent={isConnected} />
         </StatusCard>
 
@@ -186,13 +179,13 @@ export function StatusScreen() {
           index={3}
           icon={{ ios: 'antenna.radiowaves.left.and.right', android: 'wifi_tethering', web: 'wifi_tethering' }}
           title="Transport">
-          <Row label="Discovery" value="Bluetooth LE" />
+          <Row label="Discovery" value="Wi-Fi / LAN" />
           <Row label="Call/messages" value="Local peer-to-peer" />
           <Row label="Current network" value={networkLabel} />
           <Row label="Internet" value="Not required" />
           <View style={styles.noteRow}>
             <ThemedText type="small" themeColor="textSecondary">
-              Bluetooth finds nearby devices. Voice and messages use the local peer connection, not BLE audio.
+              LocalLink scans the current Wi-Fi or hotspot for nearby devices. Voice and messages stay peer-to-peer on the local network.
             </ThemedText>
           </View>
         </StatusCard>

@@ -9,13 +9,13 @@
 ## 1. Project Overview
 
 **Problem Statement:**  
-Film crews and emergency responders often operate in remote locations with no cellular signal or Wi-Fi availability. Standard communication requires expensive airtime, licensed radio equipment, or cloud-based apps that leak metadata to carriers/ISPs. Existing two-way radios are analog/unencrypted or require costly licenses.
+Film crews and emergency responders often operate in remote locations with no cellular signal or internet. Standard communication requires expensive airtime, licensed radio equipment, or cloud-based apps that leak metadata to carriers/ISPs. Existing two-way radios are analog/unencrypted or require costly licenses.
 
 **Solution Overview:**  
-A mobile application enabling **End-to-End Encrypted (E2EE) Audio & Text Communication** between devices within Bluetooth/Wi-Fi range without relying on cellular data, internet, or third-party servers for the media stream.
+A mobile application enabling **End-to-End Encrypted (E2EE) Audio & Text Communication** between devices on the same Wi-Fi network, LAN, or phone hotspot without relying on cellular data, internet, or third-party servers for the media stream.
 
 **Primary Objective:**  
-Build a "Digital Walkie-Talkie" that functions when standard networks are down, using only local device connectivity (Bluetooth/Local IP) and on-device encryption.
+Build a "Digital Walkie-Talkie" that functions when internet access is unavailable, using only local IP connectivity and on-device encryption.
 
 ---
 
@@ -34,14 +34,14 @@ Build a "Digital Walkie-Talkie" that functions when standard networks are down, 
 
 ### F1: Device Discovery & Pairing
 
-- **FR-1.1:** App must auto-scan for nearby devices broadcasting the "LocalLink Service" UUID via Bluetooth Low Energy (BLE).
+- **FR-1.1:** App must auto-scan the local subnet for nearby devices running the LocalLink discovery responder.
 - **FR-1.2:** User initiates connection by sending a short PIN/Code to confirm identity before audio stream starts.
 - **FR-1.3:** Once paired, devices exchange public keys locally for encryption handshake.
 
 ### F2: Secure Audio Stream (P2P)
 
 - **FR-2.1:** Enable Audio-only mode using WebRTC with Opus codec (low latency).
-- **FR-2.2:** Audio must be encrypted end-to-end before transmission via UDP over Local IP/WiFi Direct or Bluetooth LE (depending on signal).
+- **FR-2.2:** Audio must be encrypted end-to-end before transmission over WebRTC on the local IP network.
 - **FR-2.3:** "Kill Switch": A hard button or voice command (`#STOP`) that immediately terminates WebRTC session and releases bandwidth.
 
 ### F3: Encrypted Messaging
@@ -53,7 +53,7 @@ Build a "Digital Walkie-Talkie" that functions when standard networks are down, 
 ### F4: Battery & Performance Optimization
 
 - **FR-4.1:** App must detect battery level and thermal state (via native APIs).
-- **FR-4.2:** If battery < 20%, app defaults to Audio-only mode, disables Wi-Fi Direct to save power if signal is weak.
+- **FR-4.2:** If battery < 20%, app defaults to Audio-only mode and reduces background scanning to save power.
 
 ---
 
@@ -70,7 +70,7 @@ Build a "Digital Walkie-Talkie" that functions when standard networks are down, 
 
 | Scenario                 | Impact                                 | Mitigation (Senior Focus)                                                                       |
 | :----------------------- | :------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| **Bluetooth Link Drops** | Audio cuts out mid-conversation.       | Implement local audio buffer queue; auto-retry handshake when signal restored.                  |
+| **Local Link Drops**     | Audio cuts out mid-conversation.       | Implement local audio buffer queue; auto-retry handshake when signal restored.                  |
 | **Battery Depletion**    | Device crashes during call.            | Adaptive bitrate logic reduces codec quality before shutdown occurs to preserve battery longer. |
 | **No Signal Found**      | No other devices discovered.           | Show error state: "Waiting for partner device..." with clear retry instructions.                |
 | **Device Malfunction**   | One party's audio stuck on 2 channels. | Force kill-switch implemented via local network broadcast signal (no server involved).          |
@@ -81,8 +81,8 @@ Build a "Digital Walkie-Talkie" that functions when standard networks are down, 
 
 - **Core Media:** WebRTC (via React Native/Expo modules or Native Modules).
 - **Audio Codec:** Opus (optimized for low bandwidth, low latency).
-- **Discovery:** `react-native-bluetooth-le`.
-- **Signaling:** BLE Handshake + Local IP negotiation.
+- **Discovery:** `react-native-tcp-socket` LocalLink discovery responder + subnet scan.
+- **Signaling:** Direct TCP socket over local IP.
 - **Encryption:** SRTP (Secure Real-Time Transport) via WebRTC (do not use custom crypto libs unless necessary).
 - **Database:** SQLite (encrypted DB wrapper).
 
@@ -94,23 +94,20 @@ Build a "Digital Walkie-Talkie" that functions when standard networks are down, 
 
 **User Stories:**
 
-1.  Camera Man opens "LocalLink App" and toggles "On-Site Mode".
-2.  Director's phone scans for active devices in range (Bluetooth/WiFi).
-3.  Directories establish connection via BLE handshake.
+1.  Camera Man opens "LocalLink App" and enables Nearby Discovery.
+2.  Director's phone scans the local network for active LocalLink devices.
+3.  Devices establish a direct local TCP signaling connection.
 
 ### Flow Steps:
 
 ```mermaid
 graph TD
     A[Camera Man Opens App] --> B{Is Partner Nearby?}
-    B -- Yes --> C[BLE Service Discovery]
+    B -- Yes --> C[Local Network Discovery]
     C --> D[Establish Pairing PIN]
     D --> E[Exchange Public Keys (SRTP)]
-    E --> F{Can WiFi Direct be used?}
-    F -- Yes --> G[Switch to Local IP Stream]
-    F -- No --> H[Revert to BLE Audio Stream]
-    G --> I[AUDIO STREAM STARTS]
-    H --> I
+    E --> F[Open Local IP Stream]
+    F --> I[AUDIO STREAM STARTS]
 ```
 
 ## 2. Happy Path: Message Exchange
@@ -176,10 +173,10 @@ graph TD
 **Note:** This flow ensures we do NOT use a server for signaling in the MVP.
 
 1.  **Initiator (Camera Man):** Generates a random UUID + Public Key pair using CryptoKey API.
-2.  **Discovery (Both):** Scans for other devices broadcasting `LocalLink-UUID` service via BLE.
-3.  **Handshake:** Initiator sends public key to Discoverer over BLE.
+2.  **Discovery (Both):** Scans the current local subnet for LocalLink discovery responders.
+3.  **Handshake:** Initiator sends public key to the discovered peer over the direct TCP signaling socket.
 4.  **Secure Tunnel:** Once keys exchanged, WebRTC initiates `createOffer/Answer`.
-5.  **Direct IP:** If within WiFi Direct range, negotiate local IP (`192.168.X.Y`) as the remote peer connection string (Bypassing STUN/TURN servers).
+5.  **Direct IP:** Use the discovered local IP (`192.168.X.Y`) as the remote peer connection target, bypassing STUN/TURN servers.
 
 ## 2. Audio Packet Flow (WebRTC)
 
@@ -197,10 +194,10 @@ graph TD
 
 # Next Steps & Long-Range Planning
 
-## Phase 1: Short Range (Bluetooth/WiFi Direct)
+## Phase 1: Short Range (Same Wi-Fi/LAN)
 
 - Complete implementation of P2P Audio via WebRTC.
-- Test with Bluetooth/WiFi Direct on same device or paired phones.
+- Test with two phones on the same Wi-Fi network or one phone hotspot.
 - Ensure audio quality is acceptable at <50m range.
 
 ## Phase 2: Long Range (Mesh/Relay)
@@ -208,7 +205,7 @@ graph TD
 - **Goal:** Enable communication >1km without cellular data.
 - **Approach:** Implement "Human Mesh Network".
   - If Device A cannot reach Device B, it scans for other devices with LocalLink installed.
-  - Device A sends message to Relay 1 (BLE/WiFi).
+  - Device A sends message to Relay 1 over the local network.
   - Relay 1 forwards to Relay 2.
   - Relay 2 connects directly to Device B.
 - **Risk:** Battery drain on relays, latency increase per hop.
@@ -219,7 +216,7 @@ graph TD
 
 When you present this PRD and Flows:
 
-1.  **Explain the "No Server" Logic:** Emphasize that WebRTC usually requires a signaling server (TURN/STUN), but we are using BLE to do the handshake manually because there is no internet. This shows deep network knowledge.
+1.  **Explain the "No Server" Logic:** Emphasize that WebRTC usually uses signaling infrastructure, but LocalLink performs discovery and signaling over direct local-network sockets because there is no internet requirement.
 2.  **Security by Design:** Point out that even if the app is compromised, the SRTP encryption means the audio cannot be decrypted without your device's private key.
 3.  **Fail-Safe Architecture:** Mention how we handle connection drops (local queues) to ensure reliability in unstable environments.
 

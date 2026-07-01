@@ -3,17 +3,16 @@ import { StyleSheet, View } from 'react-native';
 
 import { PairButton } from '@/components/buttons';
 import { BatteryIndicator } from '@/components/indicators/battery-indicator';
-import { SignalStrength } from '@/components/indicators/signal-strength';
 import { StatusPill } from '@/components/status-pill';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { BleDevice } from '@/types';
+import type { DiscoveredDevice } from '@/types';
 
 type DeviceCardProps = {
-  device: BleDevice;
-  onPair: (device: BleDevice) => void;
+  device: DiscoveredDevice;
+  onPair: (device: DiscoveredDevice) => void;
 };
 
 export function DeviceCard({ device, onPair }: DeviceCardProps) {
@@ -39,9 +38,8 @@ export function DeviceCard({ device, onPair }: DeviceCardProps) {
             {device.name}
           </ThemedText>
           <View style={styles.meta}>
-            <SignalStrength signal={device.signal} />
             <ThemedText type="code" themeColor="textSecondary">
-              {device.distanceMeters.toFixed(0)}m
+              LOCAL NETWORK
             </ThemedText>
             {device.batteryLevel !== undefined ? (
               <BatteryIndicator level={device.batteryLevel} />

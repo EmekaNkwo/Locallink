@@ -1,14 +1,14 @@
 import type { DiscoveryService, ScanHandlers } from './discovery-service.types';
 
-import type { BleDevice } from '@/types';
+import type { DiscoveredDevice } from '@/types';
 
-const MOCK_DEVICES: BleDevice[] = [
-  { id: 'dev-director', name: 'Director', signal: 88, distanceMeters: 12, paired: false, batteryLevel: 74 },
-  { id: 'dev-camera-b', name: 'Camera B', signal: 64, distanceMeters: 28, paired: false, batteryLevel: 52 },
-  { id: 'dev-sound-op', name: 'Sound Op', signal: 41, distanceMeters: 46, paired: false, batteryLevel: 90 },
+const MOCK_DEVICES: DiscoveredDevice[] = [
+  { id: 'dev-director', name: 'Director', paired: false, batteryLevel: 74 },
+  { id: 'dev-camera-b', name: 'Camera B', paired: false, batteryLevel: 52 },
+  { id: 'dev-sound-op', name: 'Sound Op', paired: false, batteryLevel: 90 },
 ];
 
-/** Web/preview mock: simulates BLE advertisements over time. */
+/** Web/preview mock: simulates local-network discovery over time. */
 class MockDiscoveryService implements DiscoveryService {
   scan({ onDevice, onComplete }: ScanHandlers): () => void {
     const timers: ReturnType<typeof setTimeout>[] = [];

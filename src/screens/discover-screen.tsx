@@ -18,7 +18,7 @@ import { SectionLabel } from '@/components/ui/section-label';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useDeviceStore } from '@/store';
-import type { BleDevice } from '@/types';
+import type { DiscoveredDevice } from '@/types';
 
 export function DiscoverScreen() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export function DiscoverScreen() {
   const pairDevice = useDeviceStore((state) => state.pair);
 
   const [nearbyDiscoveryEnabled, setNearbyDiscoveryEnabled] = useState(true);
-  const [pairingDevice, setPairingDevice] = useState<BleDevice | null>(null);
+  const [pairingDevice, setPairingDevice] = useState<DiscoveredDevice | null>(null);
 
   useEffect(() => {
     if (!nearbyDiscoveryEnabled) {
@@ -91,9 +91,9 @@ export function DiscoverScreen() {
             subtitle={
               nearbyDiscoveryEnabled
                 ? isScanning
-                  ? 'Listening for LocalLink beacons…'
-                  : `${devices.length} devices in range`
-                : 'Bluetooth discovery is paused'
+                  ? 'Scanning your local network…'
+                  : `${devices.length} devices found on this network`
+                : 'Local network discovery is paused'
             }
             right={
               <IconButton
@@ -116,7 +116,7 @@ export function DiscoverScreen() {
               <View style={styles.toggleText}>
                 <ThemedText type="smallBold">Nearby Discovery</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Find nearby LocalLink devices
+                  Find LocalLink devices on the same Wi-Fi or hotspot
                 </ThemedText>
               </View>
               <Switch
@@ -138,7 +138,7 @@ export function DiscoverScreen() {
               />
               <ThemedText type="smallBold">Nearby Discovery is off</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
-                Turn it on to scan for nearby LocalLink devices.
+                Turn it on to scan this Wi-Fi or hotspot for LocalLink devices.
               </ThemedText>
               <PressableScale
                 onPress={retryScan}
@@ -168,7 +168,7 @@ export function DiscoverScreen() {
               />
               <ThemedText type="smallBold">Waiting for partner device…</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
-                Make sure the other device has LocalLink open with Nearby Discovery enabled.
+                Make sure both devices are on the same Wi-Fi or hotspot with LocalLink open.
               </ThemedText>
               <PressableScale
                 onPress={retryScan}
@@ -187,7 +187,7 @@ export function DiscoverScreen() {
             </Animated.View>
           ) : (
             <View style={styles.list}>
-              <SectionLabel>In Range</SectionLabel>
+              <SectionLabel>On This Network</SectionLabel>
               {devices.map((device, i) => (
                 <Animated.View key={device.id} entering={FadeInDown.duration(420).delay(i * 80)}>
                   <DeviceCard device={device} onPair={setPairingDevice} />

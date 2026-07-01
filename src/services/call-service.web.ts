@@ -12,7 +12,7 @@ class MockCallService implements CallService {
       setTimeout(() => {
         const session: CallSession = {
           peerName,
-          mode: 'wifi-direct',
+          mode: 'local-network',
           latencyMs: 48,
           encrypted: true,
           startedAt: Date.now(),

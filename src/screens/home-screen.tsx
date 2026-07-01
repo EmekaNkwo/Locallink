@@ -25,9 +25,8 @@ export function HomeScreen() {
   const peerName = pairedDevice?.name ?? 'No device paired';
   const isLinked = callStatus === 'active';
   const linkLabel = isLinked ? 'Live secure channel' : pairedDevice ? 'Ready to start call' : 'Find a nearby device';
-  const signalValue = pairedDevice ? String(pairedDevice.signal) : '—';
-  const signalStatus = pairedDevice ? (pairedDevice.signal >= 70 ? 'Excellent' : pairedDevice.signal >= 40 ? 'Fair' : 'Weak') : 'No signal';
-  const signalDistance = pairedDevice?.distanceMeters ? `${pairedDevice.distanceMeters}m` : '—';
+  const networkValue = pairedDevice ? 'LAN' : '—';
+  const networkStatus = pairedDevice ? 'On network' : 'No peer';
   const pairedCount = pairedDevice ? 1 : 0;
   const queuedCount = messages.filter((message) => message.status === 'queued').length;
 
@@ -99,14 +98,14 @@ export function HomeScreen() {
             <View style={styles.signalHeader}>
               <View>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Signal
+                  Network
                 </ThemedText>
-                <Stat value={signalValue} unit="%" />
+                <Stat value={networkValue} unit="" />
               </View>
             </View>
             <View style={styles.signalDetails}>
-              <MetricPill label={signalStatus} tone={pairedDevice ? 'success' : 'neutral'} />
-              <MetricPill label={signalDistance} />
+              <MetricPill label={networkStatus} tone={pairedDevice ? 'success' : 'neutral'} />
+              <MetricPill label="Wi-Fi / hotspot" />
             </View>
           </BentoCard>
         </Animated.View>
@@ -179,7 +178,7 @@ export function HomeScreen() {
                 {pairedDevice ? 'Start Talk Session' : 'Find Nearby Device'}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                {pairedDevice ? `Talk with ${pairedDevice.name}` : 'Scan with Bluetooth discovery'}
+                {pairedDevice ? `Talk with ${pairedDevice.name}` : 'Scan the local network'}
               </ThemedText>
             </View>
           </PressableScale>

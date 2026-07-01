@@ -98,6 +98,12 @@ class PeerSession {
     this.responderReady = true;
   }
 
+  async stopResponder(): Promise<void> {
+    if (!this.responderReady) return;
+    this.responderReady = false;
+    await signalingService.stop();
+  }
+
   /**
    * Initiator role: connect to a discovered peer, run the WebRTC handshake, and
    * resolve with the derived SAS once media is connected.
@@ -202,6 +208,15 @@ class PeerSession {
   }
 
   private async handleOffer(message: Extract<SignalMessage, { type: 'offer' }>): Promise<void> {
+    const valid = await encryptionService.verify(
+      message.publicKey,
+      message.sig,
+      utf8ToBase64(message.sdp),
+    );
+    if (!valid) {
+      this.connectedReject?.(new Error('Peer identity signature is invalid'));
+      return;
+    }
     this.peerPublicKey = message.publicKey;
     this.offerSdp = message.sdp;
 
@@ -384,7 +399,7 @@ class PeerSession {
   private async buildSession(): Promise<CallSession> {
     return {
       peerName: this.peerName,
-      mode: 'wifi-direct',
+      mode: 'local-network',
       latencyMs: 0,
       encrypted: true,
       startedAt: Date.now(),

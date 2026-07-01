@@ -50,7 +50,7 @@ export function TalkScreen() {
   const [showKillConfirm, setShowKillConfirm] = useState(false);
 
   const peerName = session?.peerName ?? pairedDevice?.name ?? 'Director';
-  const mode = session?.mode ?? 'ble';
+  const mode = session?.mode ?? 'local-network';
   const latencyMs = session?.latencyMs ?? 0;
   const selfBattery = session?.selfBattery ?? 0;
   const peerBattery = session?.peerBattery ?? 0;
@@ -131,7 +131,7 @@ export function TalkScreen() {
             {peerName}
           </ThemedText>
           <ThemedText type="code" themeColor="textSecondary" style={styles.metaLine}>
-            {session ? `${mode === 'wifi-direct' ? 'WIFI DIRECT' : 'BLUETOOTH LE'} · ${latencyMs}MS` : 'CONNECTING…'}
+            {session ? `${mode === 'local-network' ? 'LOCAL NETWORK' : mode} · ${latencyMs}MS` : 'CONNECTING…'}
           </ThemedText>
           <ThemedText type="title" style={[styles.timer, { color: theme.tint }]}>
             {formatDuration(elapsed)}

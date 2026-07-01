@@ -31,7 +31,6 @@ type SettingRow = {
 
 const SETTINGS: SettingRow[] = [
   { id: 'audio-only', label: 'Audio-only on Low Battery', description: 'Disable video when below 20%', defaultValue: true },
-  { id: 'wifi-direct', label: 'Wi-Fi Direct', description: 'Prefer local IP when in range', defaultValue: true },
   { id: 'notifications', label: 'Notifications', description: 'Alert on incoming messages', defaultValue: false },
 ];
 

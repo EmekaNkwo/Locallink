@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { discoveryService } from '@/services';
 import { toast } from '@/store/use-toast-store';
-import type { BleDevice } from '@/types';
+import type { DiscoveredDevice } from '@/types';
 
 let stopScanFn: (() => void) | null = null;
 let scanStartedAt = 0;
@@ -17,25 +17,22 @@ function clearFinishScanTimer(): void {
 }
 
 function discoveryErrorMessage(error: Error): string {
-  if (/bluetooth is not available|bluetoothnotavailable/i.test(error.message)) {
-    return 'Bluetooth is unavailable on this device';
-  }
-  if (/not enabled|turned off|bluetoothoff|disabled/i.test(error.message)) {
-    return 'Turn on Bluetooth to discover nearby devices';
+  if (/network|wifi|socket|eaddrinuse|eacces|enotconn/i.test(error.message)) {
+    return 'Could not start local network discovery';
   }
   if (/permission|denied|unauthorized/i.test(error.message)) {
-    return 'Bluetooth permission is required to scan';
+    return 'Local network permission is required to scan';
   }
-  return 'Could not start scanning for devices';
+  return 'Could not scan the local network for devices';
 }
 
 type DeviceState = {
-  devices: BleDevice[];
+  devices: DiscoveredDevice[];
   isScanning: boolean;
-  pairedDevice: BleDevice | null;
+  pairedDevice: DiscoveredDevice | null;
   startScan: () => void;
   stopScan: () => void;
-  pair: (device: BleDevice, pin: string) => Promise<boolean>;
+  pair: (device: DiscoveredDevice, pin: string) => Promise<boolean>;
 };
 
 export const useDeviceStore = create<DeviceState>((set, get) => ({
@@ -48,14 +45,16 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
     clearFinishScanTimer();
     scanStartedAt = Date.now();
     set({ isScanning: true, devices: [] });
-    const finishScan = (after?: () => void) => {
+    const finishScan = (after?: () => void, stopDiscovery = true) => {
       clearFinishScanTimer();
       const elapsed = Date.now() - scanStartedAt;
       const remaining = Math.max(0, MIN_SCAN_VISIBLE_MS - elapsed);
       finishScanTimer = setTimeout(() => {
         finishScanTimer = null;
-        stopScanFn?.();
-        stopScanFn = null;
+        if (stopDiscovery) {
+          stopScanFn?.();
+          stopScanFn = null;
+        }
         set({ isScanning: false });
         after?.();
       }, remaining);
@@ -68,7 +67,7 @@ export const useDeviceStore = create<DeviceState>((set, get) => ({
             ? {}
             : { devices: [...state.devices, device] },
         ),
-      onComplete: () => finishScan(),
+      onComplete: () => finishScan(undefined, false),
       onError: (error) => {
         if (!get().isScanning) return;
         finishScan(() => toast.error(discoveryErrorMessage(error)));

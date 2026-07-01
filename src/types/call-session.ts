@@ -1,6 +1,6 @@
 export interface CallSession {
   peerName: string;
-  mode: 'wifi-direct' | 'ble';
+  mode: 'local-network';
   latencyMs: number;
   encrypted: boolean;
   startedAt: number;

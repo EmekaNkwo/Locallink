@@ -1,8 +1,6 @@
-export interface BleDevice {
+export interface DiscoveredDevice {
   id: string;
   name: string;
-  signal: number;
-  distanceMeters: number;
   paired: boolean;
   batteryLevel?: number;
 }

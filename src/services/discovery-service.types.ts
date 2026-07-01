@@ -1,15 +1,15 @@
-import type { BleDevice } from '@/types';
+import type { DiscoveredDevice } from '@/types';
 
 export type ScanHandlers = {
-  onDevice: (device: BleDevice) => void;
+  onDevice: (device: DiscoveredDevice) => void;
   onComplete?: () => void;
-  /** Called when discovery can't start (e.g. Bluetooth unavailable/off). */
+  /** Called when local-network discovery can't start. */
   onError?: (error: Error) => void;
 };
 
 /**
  * Device discovery + pairing boundary (PRD F1).
- * Native: react-native-ble-lite (advertise + scan). Web: mock.
+ * Native: Wi-Fi/LAN TCP discovery. Web: mock.
  */
 export interface DiscoveryService {
   /** Begin scanning. Returns a stop function that cancels in-flight discovery. */

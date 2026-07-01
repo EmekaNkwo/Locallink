@@ -40,24 +40,24 @@ locallink/
 │       └── index.ts            # Export all icons
 │
 ├── screens/                      # Screen-specific logic & hooks
-│   ├── discover-screen.tsx     # BLE scanning, device management
+│   ├── discover-screen.tsx     # Wi-Fi/LAN discovery, device management
 │   ├── talk-screen.tsx        # WebRTC audio session
 │   ├── messages-screen.tsx    # Message queue, sync logic
 │   └── status-screen.tsx       # Battery, connection monitoring
 │
 ├── hooks/                       # Custom React hooks
 │   ├── use-battery.ts           # Battery level & state detection
-│   ├── use-ble-scanner.ts       # Bluetooth Low Energy scanning
+│   ├── use-lan-discovery.ts     # Local network discovery
 │   ├── use-webrtc-audio.ts      # WebRTC audio stream management
 │   ├── use-message-queue.ts     # SQLite message persistence
-│   └── use-connection-mode.ts   # BLE vs WiFi Direct switching
+│   └── use-connection-mode.ts   # Local-network connection state
 │
 ├── services/                    # Business logic & external APIs
-│   ├── ble-service.ts           # Bluetooth service wrapper
+│   ├── discovery-service.ts     # Wi-Fi/LAN discovery service
 │   ├── webrtc-service.ts        # WebRTC/P2P audio service
 │   ├── encryption-service.ts    # E2EE key management (SRTP)
 │   ├── database-service.ts      # SQLite operations wrapper
-│   └── network-service.ts       # Local IP/WiFi Direct negotiation
+│   └── network-service.ts       # Local IP discovery/connection helpers
 │
 ├── utils/                       # Utility functions & helpers
 │   ├── format.ts                # Date, number formatting
@@ -66,7 +66,7 @@ locallink/
 │   └── safe-area.tsx           # Safe area insets helper
 │
 ├── types/                       # TypeScript type definitions
-│   ├── ble-device.ts
+│   ├── discovered-device.ts     # Discovered peer shape
 │   ├── message.ts
 │   ├── call-session.ts
 │   └── index.ts                 # Shared types
@@ -74,7 +74,7 @@ locallink/
 ├── constants/                   # App-wide configuration
 │   ├── theme.ts                 # Colors, spacing, typography
 │   ├── app.ts                   # Build flags, feature toggles
-│   └── ble.ts                   # BLE UUIDs, service config
+│   └── network.ts               # Discovery/signaling ports
 │
 ├── assets/                      # Images, fonts, icons
 │   ├── images/
@@ -83,7 +83,7 @@ locallink/
 │   └── expo-icon/              # Expo icon assets
 │
 ├── lib/                         # Third-party library wrappers
-│   ├── react-native-bluetooth-le.ts
+│   ├── react-native-tcp-socket.ts
 │   ├── expo-blur.ts            # Blur effects wrapper
 │   └── expo-status-bar.ts      # Status bar wrapper
 │
